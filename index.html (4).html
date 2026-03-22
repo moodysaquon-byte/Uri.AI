@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>uriAI — Your AI Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0e0e10; --surface: #18181c; --surface2: #222228;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --text: #f0eff4; --muted: #8a8a99;
+  --accent: #a78bfa; --accent2: #7c3aed; --accent-bg: rgba(167,139,250,0.1);
+  --green: #34d399; --green-bg: rgba(52,211,153,0.1);
+  --amber: #fbbf24; --amber-bg: rgba(251,191,36,0.1);
+  --blue: #60a5fa; --blue-bg: rgba(96,165,250,0.1);
+  --coral: #fb7185; --coral-bg: rgba(251,113,133,0.1);
+  --red: #f87171; --red-bg: rgba(248,113,113,0.1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+nav { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(14,14,16,0.96); backdrop-filter: blur(12px); z-index: 100; }
+.nav-logo { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; white-space: nowrap; }
+.nav-logo span { color: var(--accent); font-style: italic; }
+.nav-tabs { display: flex; gap: 2px; margin-left: 20px; }
+.nav-tab { padding: 7px 14px; font-size: 13px; border-radius: 8px; cursor: pointer; color: var(--muted); border: none; background: transparent; transition: all 0.15s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--accent); background: var(--accent-bg); }
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.plan-pill { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); white-space: nowrap; }
+.upgrade-btn { font-size: 13px; font-weight: 500; padding: 7px 16px; border-radius: 8px; background: var(--accent2); color: white; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s; }
+.upgrade-btn:hover { background: #6d28d9; }
+.page { display: none; }
+.page.active { display: block; }
+#chat-page { display: none; flex-direction: column; height: calc(100vh - 53px); }
+#chat-page.active { display: flex; }
+#chat-header { padding: 12px 20px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.header-row1 { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.grade-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+#grade-select { font-size: 13px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--surface2); color: var(--text); cursor: pointer; font-family: 'DM Sans', sans-serif; }
+.mode-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.mchip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.mchip:hover { color: var(--text); border-color: var(--border2); }
+.mchip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.subject-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.schip { font-size: 12px; padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.schip:hover { color: var(--text); border-color: var(--border2); }
+.schip.active { font-weight: 500; }
+.s-math.active { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+.s-science.active { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+.s-english.active { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+.s-coding.active { border-color: var(--coral); color: var(--coral); background: var(--coral-bg); }
+.s-history.active { border-color: #c084fc; color: #c084fc; background: rgba(192,132,252,0.1); }
+.s-any.active { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+#msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+#msgs::-webkit-scrollbar { width: 4px; }
+#msgs::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 2px; }
+.msg { display: flex; gap: 10px; max-width: 86%; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; }
+.avatar { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 2px; }
+.ai-av { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(167,139,250,0.25); }
+.user-av { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+.bubble { padding: 11px 15px; border-radius: 14px; font-size: 14px; line-height: 1.7; }
+.msg.ai .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 4px 14px 14px 14px; color: var(--text); }
+.msg.user .bubble { background: var(--accent2); color: white; border-radius: 14px 4px 14px 14px; }
+.msg-img { max-width: 200px; border-radius: 8px; margin-bottom: 6px; display: block; }
+.typing-bub { padding: 14px 18px; }
+.dots { display: flex; gap: 5px; align-items: center; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 1.4s infinite; }
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1)}}
+#welcome { padding: 20px; }
+.welcome-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 300; color: var(--text); margin-bottom: 6px; }
+.welcome-title em { color: var(--accent); font-style: italic; }
+.welcome-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.cap-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+.cap-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; cursor: pointer; transition: border-color 0.15s; }
+.cap-card:hover { border-color: var(--border2); }
+.cap-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.cap-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+.cap-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+#input-area { padding: 12px 20px; border-top: 1px solid var(--border); background: var(--surface); }
+#quick-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.qchip { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+.qchip:hover { border-color: var(--border2); color: var(--text); }
+#image-preview-area { margin-bottom: 10px; position: relative; display: inline-block; }
+#image-preview { max-height: 80px; border-radius: 8px; border: 1px solid var(--border2); }
+#remove-img { position: absolute; top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--red); border: none; color: white; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+#compose { display: flex; gap: 8px; align-items: flex-end; }
+#img-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border2); background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
+#img-btn:hover { border-color: var(--accent); color: var(--accent); }
+#img-btn.has-limit { border-color: var(--amber); color: var(--amber); }
+#file-input { display: none; }
+#user-input { flex: 1; background: var(--surface2); border: 1px solid var(--border2); border-radius: 12px; padding: 11px 15px; font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); resize: none; min-height: 44px; max-height: 120px; line-height: 1.5; transition: border-color 0.15s; }
+#user-input::placeholder { color: var(--muted); }
+#user-input:focus { outline: none; border-color: var(--accent); }
+#send-btn { width: 44px; height: 44px; border-radius: 12px; border: none; background: var(--accent2); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s; }
+#send-btn:hover { background: #6d28d9; }
+#send-btn:disabled { opacity: 0.4; cursor: default; }
+.status-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+.status-badge { font-size: 11px; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+.badge-green { background: var(--green-bg); color: var(--green); }
+.badge-amber { background: var(--amber-bg); color: var(--amber); }
+.badge-red { background: var(--red-bg); color: var(--red); }
+.badge-purple { background: var(--accent-bg); color: var(--accent); }
+.upgrade-link { font-size: 11px; color: var(--accent); cursor: pointer; white-space: nowrap; margin-left: auto; }
+#upgrade-modal { display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+#upgrade-modal.show { display: flex; }
+.modal-card { background: var(--surface); border: 1px solid var(--border2); border-radius: 20px; padding: 28px; max-width: 360px; width: 100%; text-align: center; }
+.modal-icon { width: 48px; height: 48px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.modal-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+.modal-btn { display: block; width: 100%; padding: 12px; font-size: 14px; font-weight: 500; border-radius: 10px; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-bottom: 8px; transition: background 0.15s; }
+.modal-btn.primary { background: var(--accent2); color: white; }
+.modal-btn.primary:hover { background: #6d28d9; }
+.modal-btn.ghost { background: transparent; border: 1px solid var(--border2); color: var(--muted); }
+.modal-btn.ghost:hover { color: var(--text); }
+#pricing-page { padding: 40px 20px; max-width: 860px; margin: 0 auto; }
+.pricing-hero { text-align: center; margin-bottom: 36px; }
+.pricing-hero h1 { font-family: 'Fraunces', serif; font-size: 34px; font-weight: 300; letter-spacing: -1px; margin-bottom: 10px; }
+.pricing-hero h1 em { color: var(--accent); font-style: italic; }
+.pricing-hero p { font-size: 15px; color: var(--muted); }
+.billing-toggle { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 32px; }
+.billing-toggle span { font-size: 13px; color: var(--muted); transition: color 0.15s; }
+.billing-toggle span.on { color: var(--text); font-weight: 500; }
+#bill-toggle { width: 48px; height: 26px; border-radius: 13px; background: var(--accent2); border: none; cursor: pointer; position: relative; }
+#bill-thumb { width: 20px; height: 20px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: left 0.2s; }
+#bill-toggle.yearly #bill-thumb { left: 25px; }
+.save-tag { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.plans-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 32px; }
+.plan-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; }
+.plan-card.featured { border: 2px solid var(--accent2); }
+.popular-tag { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(167,139,250,0.25); display: inline-block; margin-bottom: 14px; }
+.plan-name { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+.plan-tagline { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.price-num { font-size: 32px; font-weight: 600; }
+.price-per { font-size: 14px; color: var(--muted); }
+.price-note { font-size: 12px; color: var(--green); margin-bottom: 18px; min-height: 18px; }
+.plan-div { border: none; border-top: 1px solid var(--border); margin-bottom: 18px; }
+.plan-features { list-style: none; flex: 1; margin-bottom: 22px; display: flex; flex-direction: column; gap: 9px; }
+.plan-features li { font-size: 13px; display: flex; align-items: flex-start; gap: 8px; color: var(--text); }
+.plan-features li.no { color: var(--muted); }
+.fi { width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 9px; }
+.fi.on { background: var(--green-bg); color: var(--green); }
+.fi.off { background: var(--surface2); }
+.plan-cta { padding: 11px; font-size: 13px; font-weight: 500; border-radius: 10px; cursor: pointer; text-align: center; border: none; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.plan-cta.ghost { background: transparent; border: 1px solid var(--border2); color: var(--text); }
+.plan-cta.ghost:hover { background: var(--surface2); }
+.plan-cta.solid { background: var(--accent2); color: white; }
+.plan-cta.solid:hover { background: #6d28d9; }
+.coming-soon-box { text-align: center; padding: 28px 24px; background: var(--surface); border: 1px solid #7c3aed; border-radius: 16px; margin-bottom: 32px; }
+.coming-soon-box h3 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.coming-soon-box p { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+.waitlist-row { display: flex; gap: 8px; max-width: 420px; margin: 0 auto; }
+.waitlist-input { flex: 1; padding: 10px 14px; font-size: 13px; font-family: 'DM Sans', sans-serif; background: var(--surface2); border: 1px solid var(--border2); border-radius: 10px; color: var(--text); }
+.waitlist-input::placeholder { color: var(--muted); }
+.waitlist-input:focus { outline: none; border-color: var(--accent); }
+.waitlist-btn { padding: 10px 20px; font-size: 13px; font-weight: 500; background: var(--accent2); color: white; border: none; border-radius: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; transition: background 0.15s; }
+.waitlist-btn:hover { background: #6d28d9; }
+.waitlist-success { font-size: 12px; color: var(--green); margin-top: 12px; display: none; }
+.faq-section { max-width: 560px; margin: 0 auto 36px; }
+.faq-section h2 { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 300; margin-bottom: 18px; text-align: center; }
+.faq-item { border-top: 1px solid var(--border); padding: 14px 0; }
+.faq-q { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+.faq-a { font-size: 13px; color: var(--muted); line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">uri<span>AI</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('chat')">AI Tutor</button>
+    <button class="nav-tab" onclick="showPage('pricing')">Pricing</button>
+  </div>
+  <div class="nav-right">
+    <div class="plan-pill">Free plan</div>
+    <button class="upgrade-btn" onclick="showPage('pricing')">Upgrade</button>
+  </div>
+</nav>
+
+<div id="chat-page" class="page active" style="position:relative;">
+  <div id="upgrade-modal">
+    <div class="modal-card">
+      <div class="modal-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      </div>
+      <div class="modal-title" id="modal-title">Image limit reached</div>
+      <div class="modal-sub" id="modal-sub">You've used your 3 free image uploads today. They reset in 12 hours — or upgrade to Pro for unlimited images.</div>
+      <button class="modal-btn primary" onclick="closeModal(); showPage('pricing')">Upgrade to Pro</button>
+      <button class="modal-btn ghost" onclick="closeModal()">Keep using text (it's free)</button>
+    </div>
+  </div>
+
+  <div id="chat-header">
+    <div class="header-row1">
+      <span class="grade-label">Grade:</span>
+      <select id="grade-select">
+        <option value="prek">Pre-K (ages 3–5)</option>
+        <option value="elementary">Elementary (K–5)</option>
+        <option value="middle">Middle school (6–8)</option>
+        <option value="high" selected>High school (9–12)</option>
+        <option value="college">College / university</option>
+        <option value="beyond">Beyond college / professional</option>
+      </select>
+      <div class="mode-chips">
+        <button class="mchip active" onclick="setMode(this,'tutor')">Tutor me</button>
+        <button class="mchip" onclick="setMode(this,'homework')">Homework help</button>
+        <button class="mchip" onclick="setMode(this,'research')">Research</button>
+        <button class="mchip" onclick="setMode(this,'writing')">Writing</button>
+        <button class="mchip" onclick="setMode(this,'coding')">Coding</button>
+        <button class="mchip" onclick="setMode(this,'quiz')">Quiz me</button>
+      </div>
+    </div>
+    <div class="subject-row">
+      <button class="schip s-any active" onclick="setSubject(this,'any')">All subjects</button>
+      <button class="schip s-math" onclick="setSubject(this,'math')">Math</button>
+      <button class="schip s-science" onclick="setSubject(this,'science')">Science</button>
+      <button class="schip s-english" onclick="setSubject(this,'english')">English</button>
+      <button class="schip s-coding" onclick="setSubject(this,'coding')">Coding</button>
+      <button class="schip s-history" onclick="setSubject(this,'history')">History</button>
+      <button class="schip s-any" onclick="setSubject(this,'art')">Art</button>
+      <button class="schip s-any" onclick="setSubject(this,'foreign')">Foreign language</button>
+    </div>
+  </div>
+
+  <div id="msgs">
+    <div id="welcome">
+      <div class="welcome-title">Hi! I'm your <em>AI tutor</em></div>
+      <div class="welcome-sub">Pre-K through college and beyond — unlimited questions, any subject, anytime.</div>
+      <div class="cap-grid">
+        <div class="cap-card" onclick="quickAsk('Help me solve a math problem step by step')">
+          <div class="cap-icon" style="background:var(--blue-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <div class="cap-name">Math</div>
+          <div class="cap-desc">Step-by-step solutions with full explanations</div>
+        </div>
+        <div class="cap-card" onclick="quickAsk('Explain a science concept to me with examples')">
+          <div class="cap-icon" style="background:var(--green-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg></div>
+          <div class="cap-name">Science</div>
+          <div class="cap-desc">Biology, chemistry, physics & more</div>
+        </div>
+        <div class="cap-card" onclick="quickAsk('Help me write an essay with a strong outline first')">
+          <div class="cap-icon" style="background:var(--amber-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+          <div class="cap-name">Writing</div>
+          <div class="cap-desc">Essays, reports, grammar & editing</div>
+        </div>
+        <div class="cap-card" onclick="quickAsk('Help me with a coding problem')">
+          <div class="cap-icon" style="background:var(--coral-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fb7185" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+          <div class="cap-name">Coding</div>
+          <div class="cap-desc">Python, JS, HTML, Java, C++ & more</div>
+        </div>
+        <div class="cap-card" onclick="quickAsk('Help me research a topic and give me key facts')">
+          <div class="cap-icon" style="background:rgba(192,132,252,0.1)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#c084fc" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <div class="cap-name">Research</div>
+          <div class="cap-desc">History, social studies & deep dives</div>
+        </div>
+        <div class="cap-card" onclick="quickAsk('Upload an image of my homework and help me')">
+          <div class="cap-icon" style="background:var(--accent-bg)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+          <div class="cap-name">Photo help</div>
+          <div class="cap-desc">Upload a photo of any problem</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="input-area">
+    <div id="quick-chips"></div>
+    <div id="image-preview-area" style="display:none; margin-bottom:10px;">
+      <img id="image-preview" src="" alt="preview">
+      <button id="remove-img" onclick="removeImage()">x</button>
+    </div>
+    <div id="compose">
+      <button id="img-btn" onclick="document.getElementById('file-input').click()" title="Upload image">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </button>
+      <input type="file" id="file-input" accept="image/*" onchange="handleImageUpload(this)">
+      <textarea id="user-input" placeholder="Ask anything — unlimited questions, any subject..." rows="1"></textarea>
+      <button id="send-btn" onclick="sendMsg()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="status-row">
+      <span class="status-badge badge-green">Unlimited text</span>
+      <span class="status-badge" id="img-badge">3 image uploads left today</span>
+      <span class="upgrade-link" id="upgrade-link" onclick="showPage('pricing')">Upgrade for unlimited images</span>
+    </div>
+  </div>
+</div>
+
+<div id="pricing-page" class="page">
+  <div class="pricing-hero">
+    <h1>Simple, <em>honest</em> pricing</h1>
+    <p>Unlimited text for everyone. Upgrade for unlimited image uploads.</p>
+  </div>
+  <div class="billing-toggle">
+    <span id="lbl-mo" class="on">Monthly</span>
+    <button id="bill-toggle" onclick="toggleBill()"><div id="bill-thumb"></div></button>
+    <span id="lbl-yr">Yearly</span>
+    <span class="save-tag">Save 40%</span>
+  </div>
+  <div class="plans-grid">
+    <div class="plan-card">
+      <div class="plan-name">Free</div>
+      <div class="plan-tagline">No card needed</div>
+      <div><span class="price-num">$0</span></div>
+      <div class="price-note">&nbsp;</div>
+      <hr class="plan-div">
+      <ul class="plan-features">
+        <li><span class="fi on">✓</span>Unlimited text responses</li>
+        <li><span class="fi on">✓</span>All subjects & grade levels</li>
+        <li><span class="fi on">✓</span>All 6 learning modes</li>
+        <li><span class="fi on">✓</span>3 image uploads / 12 hrs</li>
+        <li class="no"><span class="fi off"></span>Unlimited image uploads</li>
+        <li class="no"><span class="fi off"></span>Priority support</li>
+      </ul>
+      <button class="plan-cta ghost" onclick="showPage('chat')">Start free</button>
+    </div>
+    <div class="plan-card featured">
+      <div class="popular-tag">Most popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-tagline">For serious students</div>
+      <div><span class="price-num" id="pro-price">$7</span><span class="price-per" id="pro-per">/month</span></div>
+      <div class="price-note" id="pro-note">&nbsp;</div>
+      <hr class="plan-div">
+      <ul class="plan-features">
+        <li><span class="fi on">✓</span>Unlimited text responses</li>
+        <li><span class="fi on">✓</span>All subjects & grade levels</li>
+        <li><span class="fi on">✓</span>All 6 learning modes</li>
+        <li><span class="fi on">✓</span>Unlimited image uploads</li>
+        <li><span class="fi on">✓</span>Priority support</li>
+        <li><span class="fi on">✓</span>New features first</li>
+      </ul>
+      <button class="plan-cta solid" onclick="startCheckout('pro')">Get Pro — Upgrade now</button>
+    </div>
+    <div class="plan-card">
+      <div class="plan-name">Family</div>
+      <div class="plan-tagline">For parents & multiple kids</div>
+      <div><span class="price-num" id="fam-price">$15</span><span class="price-per" id="fam-per">/month</span></div>
+      <div class="price-note" id="fam-note">&nbsp;</div>
+      <hr class="plan-div">
+      <ul class="plan-features">
+        <li><span class="fi on">✓</span>Everything in Pro</li>
+        <li><span class="fi on">✓</span>Up to 4 student profiles</li>
+        <li><span class="fi on">✓</span>Each kid has own grade level</li>
+        <li><span class="fi on">✓</span>Unlimited images for all</li>
+        <li><span class="fi on">✓</span>Progress tracking</li>
+        <li><span class="fi on">✓</span>Dedicated support</li>
+      </ul>
+      <button class="plan-cta ghost" onclick="startCheckout('family')">Get Family plan</button>
+    </div>
+  </div>
+
+  <div class="coming-soon-box">
+    <h3>Payments coming soon!</h3>
+    <p>We are setting up payments right now. Drop your email below to be the first to know when Pro launches and get an exclusive early bird discount!</p>
+    <div class="waitlist-row">
+      <input type="email" id="waitlist-email" class="waitlist-input" placeholder="your@email.com">
+      <button class="waitlist-btn" onclick="joinWaitlist()">Notify me</button>
+    </div>
+    <div class="waitlist-success" id="waitlist-success">You are on the list! We will email you when Pro launches.</div>
+  </div>
+
+  <div class="faq-section">
+    <h2>Common questions</h2>
+    <div class="faq-item"><div class="faq-q">Can I cancel anytime?</div><div class="faq-a">Yes — one click, no questions asked. You keep access until the end of your billing period.</div></div>
+    <div class="faq-item"><div class="faq-q">How does the yearly plan work?</div><div class="faq-a">Pay $50 once and get a full year of Pro — that is like getting 5 months completely free.</div></div>
+    <div class="faq-item"><div class="faq-q">Why unlimited text?</div><div class="faq-a">Every student deserves to learn without limits. Images use more AI power so that is where the free limit is.</div></div>
+    <div class="faq-item"><div class="faq-q">When do image uploads reset?</div><div class="faq-a">Every 12 hours automatically. You will see a countdown timer when you hit the limit.</div></div>
+  </div>
+</div>
+
+<script>
+var currentMode = 'tutor';
+var currentSubject = 'any';
+var welcomeVisible = true;
+var isYearly = false;
+var isPro = false;
+var chatHistory = [];
+var pendingImageBase64 = null;
+var pendingImageType = null;
+var FREE_IMG_LIMIT = 3;
+var RESET_HOURS = 12;
+
+var gradeDescriptions = {
+  prek: 'a Pre-K child aged 3 to 5. Use VERY simple words, short sentences, fun examples. Be warm and playful.',
+  elementary: 'an elementary school student in grades K-5. Use simple clear language. Be encouraging and patient.',
+  middle: 'a middle school student in grades 6-8. Balance simplicity with substance. Use relatable examples.',
+  high: 'a high school student in grades 9-12. Use appropriate academic language. Show full working for math.',
+  college: 'a college or university student. Use college-level language. Go deep. Treat them as a peer.',
+  beyond: 'a post-college professional. Use expert-level language. Be concise. Skip basics unless asked.'
+};
+
+var modeInstructions = {
+  tutor: 'TUTOR MODE: Guide the student to understand. Ask guiding questions. Help them think it through.',
+  homework: 'HOMEWORK HELP MODE: Help step by step. Show work on math. Explain why each step works.',
+  research: 'RESEARCH MODE: Thorough accurate info. Key facts, dates, definitions. Suggest keywords for further research.',
+  writing: 'WRITING MODE: Help with essays, grammar, style. Give outline before full draft. Constructive feedback.',
+  coding: 'CODING MODE: Explain code line by line. Debug patiently. Support all major languages.',
+  quiz: 'QUIZ MODE: Generate practice questions. Give immediate feedback. Use multiple question types.'
+};
+
+var subjectHints = {
+  any: '', math: 'Focus on mathematics. Show all steps.',
+  science: 'Focus on science. Use accurate scientific terms.',
+  english: 'Focus on English, literature, grammar, and writing.',
+  coding: 'Focus on computer science and programming.',
+  history: 'Focus on history and social studies.',
+  art: 'Focus on art and creative subjects.',
+  foreign: 'Focus on foreign language learning.'
+};
+
+var quickChipSets = {
+  tutor: ['Explain this concept','Give me an analogy','Why does this work?','Explain it differently','What should I learn next?'],
+  homework: ['Show me step by step','Check my work','I got stuck here','Explain the formula','Give a similar example'],
+  research: ['Key facts about this','Make a timeline','Compare and contrast','Summarize this topic','Main causes and effects'],
+  writing: ['Help with an outline','Fix my grammar','Improve this sentence','Write a thesis statement','Give me feedback'],
+  coding: ['Debug this code','Explain line by line','Show me an example','What does this error mean?','How can I improve this?'],
+  quiz: ['Quiz me on this topic','Multiple choice questions','True or false quiz','Short answer questions','Check my answer']
+};
+
+function getImageUsage() {
+  try {
+    var s = localStorage.getItem('uriai_img_usage');
+    if (!s) { return { count: 0, resetAt: Date.now() + RESET_HOURS * 3600000 }; }
+    var d = JSON.parse(s);
+    if (Date.now() > d.resetAt) { return { count: 0, resetAt: Date.now() + RESET_HOURS * 3600000 }; }
+    return d;
+  } catch(e) { return { count: 0, resetAt: Date.now() + RESET_HOURS * 3600000 }; }
+}
+
+function saveImageUsage(d) {
+  try { localStorage.setItem('uriai_img_usage', JSON.stringify(d)); } catch(e) {}
+}
+
+function getImagesRemaining() {
+  if (isPro) { return 999; }
+  var u = getImageUsage();
+  return Math.max(0, FREE_IMG_LIMIT - u.count);
+}
+
+function updateImageBadge() {
+  var b = document.getElementById('img-badge');
+  var l = document.getElementById('upgrade-link');
+  var btn = document.getElementById('img-btn');
+  if (isPro) {
+    b.textContent = 'Unlimited images';
+    b.className = 'status-badge badge-purple';
+    l.style.display = 'none';
+    btn.className = '';
+    return;
+  }
+  var r = getImagesRemaining();
+  var u = getImageUsage();
+  var m = Math.ceil((u.resetAt - Date.now()) / 60000);
+  if (r <= 0) {
+    b.textContent = 'Images reset in ' + (m > 60 ? Math.ceil(m/60) + 'h' : m + 'm');
+    b.className = 'status-badge badge-red';
+    btn.className = 'has-limit';
+  } else if (r === 1) {
+    b.textContent = '1 image upload left today';
+    b.className = 'status-badge badge-amber';
+    btn.className = 'has-limit';
+  } else {
+    b.textContent = r + ' image uploads left today';
+    b.className = 'status-badge badge-green';
+    btn.className = '';
+  }
+}
+
+function handleImageUpload(input) {
+  if (!input.files || !input.files[0]) { return; }
+  if (!isPro) {
+    var r = getImagesRemaining();
+    if (r <= 0) {
+      var u = getImageUsage();
+      var m = Math.ceil((u.resetAt - Date.now()) / 60000);
+      document.getElementById('modal-title').textContent = 'Image limit reached';
+      document.getElementById('modal-sub').textContent = 'You have used your 3 free image uploads today. They reset in ' + (m > 60 ? Math.ceil(m/60) + ' hours' : m + ' minutes') + ' or upgrade to Pro for unlimited images.';
+      document.getElementById('upgrade-modal').classList.add('show');
+      input.value = '';
+      return;
+    }
+  }
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var res = e.target.result;
+    var parts = res.split(',');
+    pendingImageBase64 = parts[1];
+    pendingImageType = file.type;
+    document.getElementById('image-preview').src = res;
+    document.getElementById('image-preview-area').style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeImage() {
+  pendingImageBase64 = null;
+  pendingImageType = null;
+  document.getElementById('image-preview-area').style.display = 'none';
+  document.getElementById('image-preview').src = '';
+  document.getElementById('file-input').value = '';
+}
+
+function closeModal() {
+  document.getElementById('upgrade-modal').classList.remove('show');
+}
+
+function buildSystemPrompt() {
+  var g = document.getElementById('grade-select').value;
+  return 'You are uriAI, an advanced AI learning assistant for students from Pre-K through college and beyond.\n\nThe student is ' + gradeDescriptions[g] + '\n\n' + modeInstructions[currentMode] + '\n\n' + (subjectHints[currentSubject] || '') + '\n\nRules: Match language to grade level. Start simple. Use real world examples. Encourage thinking. Show step by step work. Be warm and patient.';
+}
+
+function showPage(p) {
+  document.querySelectorAll('.page').forEach(function(el) { el.classList.remove('active'); });
+  document.querySelectorAll('.nav-tab').forEach(function(t, i) {
+    t.classList.remove('active');
+    if ((p === 'chat' && i === 0) || (p === 'pricing' && i === 1)) { t.classList.add('active'); }
+  });
+  document.getElementById(p + '-page').classList.add('active');
+}
+
+function setMode(el, mode) {
+  document.querySelectorAll('.mchip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  currentMode = mode;
+  renderQuickChips();
+}
+
+function setSubject(el, subj) {
+  document.querySelectorAll('.schip').forEach(function(c) { c.classList.remove('active'); });
+  el.classList.add('active');
+  currentSubject = subj;
+}
+
+function renderQuickChips() {
+  var chips = quickChipSets[currentMode] || quickChipSets.tutor;
+  document.getElementById('quick-chips').innerHTML = chips.map(function(c) {
+    return '<button class="qchip" onclick="quickAsk(\'' + c.replace(/'/g, "\\'") + '\')">' + c + '</button>';
+  }).join('');
+}
+
+function hideWelcome() {
+  if (welcomeVisible) {
+    var w = document.getElementById('welcome');
+    if (w) { w.style.display = 'none'; welcomeVisible = false; }
+  }
+}
+
+function addMsg(role, text, imgSrc) {
+  hideWelcome();
+  var msgs = document.getElementById('msgs');
+  var div = document.createElement('div');
+  div.className = 'msg ' + (role === 'user' ? 'user' : 'ai');
+  var av = document.createElement('div');
+  av.className = 'avatar ' + (role === 'user' ? 'user-av' : 'ai-av');
+  av.textContent = role === 'user' ? 'You' : 'AI';
+  var bub = document.createElement('div');
+  bub.className = 'bubble';
+  if (imgSrc) {
+    var img = document.createElement('img');
+    img.src = imgSrc;
+    img.className = 'msg-img';
+    bub.appendChild(img);
+  }
+  var tn = document.createElement('span');
+  tn.innerHTML = fmt(text);
+  bub.appendChild(tn);
+  div.appendChild(av);
+  div.appendChild(bub);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function fmt(t) {
+  return t
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(251,113,133,0.15);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:13px;color:#fb7185;">$1</code>')
+    .replace(/\n(\d+)\. /g, '<br><strong>$1.</strong> ')
+    .replace(/\n- /g, '<br>• ')
+    .replace(/\n/g, '<br>');
+}
+
+function showTyping() {
+  var msgs = document.getElementById('msgs');
+  var div = document.createElement('div');
+  div.id = 'typing';
+  div.className = 'msg ai';
+  var av = document.createElement('div');
+  av.className = 'avatar ai-av';
+  av.textContent = 'AI';
+  var bub = document.createElement('div');
+  bub.className = 'bubble typing-bub';
+  bub.innerHTML = '<div class="dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  div.appendChild(av);
+  div.appendChild(bub);
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  var t = document.getElementById('typing');
+  if (t) { t.remove(); }
+}
+
+function sendMsg() {
+  var inp = document.getElementById('user-input');
+  var text = inp.value.trim();
+  var hasImage = !!pendingImageBase64;
+  if (!text && !hasImage) { return; }
+  var imgSrc = hasImage ? document.getElementById('image-preview').src : null;
+  var imgB64 = pendingImageBase64;
+  var imgType = pendingImageType;
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  addMsg('user', text || '(image uploaded)', imgSrc);
+  if (hasImage && !isPro) {
+    var u = getImageUsage();
+    u.count++;
+    saveImageUsage(u);
+    updateImageBadge();
+  }
+  removeImage();
+  var userContent = hasImage ? [{ type: 'image', source: { type: 'base64', media_type: imgType, data: imgB64 } }, { type: 'text', text: text || 'Please help me with this image.' }] : text;
+  chatHistory.push({ role: 'user', content: userContent });
+  showTyping();
+  fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system: buildSystemPrompt(), messages: chatHistory })
+  }).then(function(res) {
+    return res.json();
+  }).then(function(data) {
+    var reply = data.reply || 'Something went wrong, please try again!';
+    removeTyping();
+    addMsg('ai', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('user-input').focus();
+  }).catch(function() {
+    removeTyping();
+    addMsg('ai', 'Connection error, please try again.');
+    document.getElementById('send-btn').disabled = false;
+  });
+}
+
+function quickAsk(text) {
+  document.getElementById('user-input').value = text;
+  sendMsg();
+}
+
+document.getElementById('user-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+});
+
+document.getElementById('user-input').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+function toggleBill() {
+  isYearly = !isYearly;
+  document.getElementById('bill-toggle').className = isYearly ? 'yearly' : '';
+  document.getElementById('lbl-mo').className = isYearly ? '' : 'on';
+  document.getElementById('lbl-yr').className = isYearly ? 'on' : '';
+  if (isYearly) {
+    document.getElementById('pro-price').textContent = '$50';
+    document.getElementById('pro-per').textContent = '/year';
+    document.getElementById('pro-note').textContent = 'Just $4.17/mo, save $34';
+    document.getElementById('fam-price').textContent = '$120';
+    document.getElementById('fam-per').textContent = '/year';
+    document.getElementById('fam-note').textContent = 'Just $10/mo, save $60';
+  } else {
+    document.getElementById('pro-price').textContent = '$7';
+    document.getElementById('pro-per').textContent = '/month';
+    document.getElementById('pro-note').textContent = '\u00a0';
+    document.getElementById('fam-price').textContent = '$15';
+    document.getElementById('fam-per').textContent = '/month';
+    document.getElementById('fam-note').textContent = '\u00a0';
+  }
+}
+
+function startCheckout(plan) {
+  showPage('pricing');
+  document.getElementById('waitlist-email').focus();
+}
+
+function joinWaitlist() {
+  var email = document.getElementById('waitlist-email').value.trim();
+  if (!email || !email.includes('@')) {
+    alert('Please enter a valid email address!');
+    return;
+  }
+  try {
+    var list = JSON.parse(localStorage.getItem('uriai_waitlist') || '[]');
+    list.push({ email: email, date: new Date().toISOString() });
+    localStorage.setItem('uriai_waitlist', JSON.stringify(list));
+  } catch(e) {}
+  document.getElementById('waitlist-email').value = '';
+  document.getElementById('waitlist-success').style.display = 'block';
+}
+
+setInterval(updateImageBadge, 30000);
+renderQuickChips();
+updateImageBadge();
+</script>
+</body>
+</html>
