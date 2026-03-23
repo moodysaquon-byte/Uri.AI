@@ -1,0 +1,14 @@
+{
+  "name": "uri-ai",
+  "version": "1.0.0",
+  "description": "uriAI - Your AI Tutor",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'Static site - no build needed'",
+    "lint": "echo 'No linter configured'"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^1.0.14"
+  }
+}
